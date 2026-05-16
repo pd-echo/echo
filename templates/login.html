@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
+  <title>définitif-login</title>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='websiteLogos/definitif_Logo_wb_with_red_hl_square.png') }}">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header id="header"></header>
+
+  <!-- Banner-home Section -->
+  <div class="banner-login">
+    <p class="banner-subtext">
+    Our system makes financial data simple, secure, 
+    and insightful - empowering smarter portfolio decisions.
+    </p>
+    <h2>
+      <span>Simple</span>
+      <span class="red-separator">|</span>
+      <span>Sécure</span>
+      <span class="red-separator">|</span>
+      <span>Insightful</span>
+    </h2>
+  </div>
+
+
+  <!-- Horizontal Sections -->
+  <div class="landing-grid">
+
+    <a href="/dashboard" class="landing-card" target="_blank" rel="noopener noreferrer">
+      <img src="static/cardImg/echo-card-zero.jpg" alt="Products">
+      <div class="card-overlay">
+        <p>Welcome to écho.</p>
+        <p>Gain secure access to your investment portfolio - all in one place.</p>
+      </div>
+    </a>
+
+    <a href="https://www.mfuonline.com" class="landing-card" target="_blank" rel="noopener noreferrer">
+      <img src="static/cardImg/mfu-card-zero.jpg" alt="Products">
+      <div class="card-overlay">
+        <p>Transact through MF Utility.</p>
+        <p>Common Account Number (CAN) is required to log-in.</p>
+      </div>
+    </a>
+  </div>
+
+  <div class="calculator-navigation">
+    <p class="calc-nav-title">For any assistence.</p>
+    <div class="can-actions">
+      <a href="#get-in-touch" class="calculator-card">
+        <i class="fas fa-envelope"></i>
+        <span>Get in Touch</span>
+      </a>
+    </div>
+  </div>
+
+  <div class="banner-loginmessage">
+    <h2>Discover</h2>
+    <p class="banner-subtext">
+    Discover financial tools that simplify, secure, and enrich your journey. 
+    Our platform also offers services and insights to empower smarter, 
+    more informed decisions for the future.
+    </p>
+    <div class="login-actions">
+        <a href="/services" class="login-card">
+        <i class="fas fa-briefcase"></i>
+        <span>Explore Services</span>
+        </a>
+
+        <a href="/calculators" class="login-card">
+        <i class="fas fa-calculator"></i>
+        <span>Financial Tools</span>
+        </a>
+
+        <a href="/insights" class="login-card">
+        <i class="fas fa-chart-line"></i>
+        <span>Market Insights</span>
+        </a>
+    </div>
+  </div>
+  <!-- Footer -->
+  <footer id="footer"></footer>
+
+  <!-- JavaScript injection -->
+  <script src="{{ url_for('static', filename='loadHeaderFooter.js') }}"></script>
+
+</body>
+</html>

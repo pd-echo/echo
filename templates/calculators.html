@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>définitif-tools</title>
+  <link rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='websiteLogos/definitif_Logo_wb_with_red_hl_square.png') }}">
+</head>
+
+<body>
+  <!-- Common header injected -->
+  <header id="header"></header>
+
+  <!-- Banner-home Section -->
+  <div class="banner-calculators">
+    <p class="banner-subtext">
+      Simple tools that turn financial goals into achievable plans - 
+      helping you break ambitions into precise steps, 
+      track progress, and build confidence.
+    </p>
+    <h2>
+      <span>Dréam</span>
+      <span class="red-separator">|</span>
+      <span>Plan</span>
+      <span class="red-separator">|</span>
+      <span>Prosper</span>
+    </h2>
+  </div>
+    <!-- Horizontal Sections -->
+  <div class="landing-grid">
+    <a href="{{ url_for('investment') }}" class="landing-card">
+      <img src="static/cardImg/growth_hand.jpg" alt="Investment Growth">
+      <div class="card-overlay">
+        <h2>Portfolio Creation</h2>
+        <p>Estimate the potential growth of your portfolio over time.</p>
+      </div>
+    </a>
+    
+    <a href="{{ url_for('goal') }}" class="landing-card">
+      <img src="static/cardImg/goal_peak.jpg" alt="Goal Planner">
+      <div class="card-overlay">
+        <h2>Goal Planner</h2>
+        <p>Plan your financial goals with our effortless goal planning tool.</p>
+      </div>
+    </a>
+
+    <a href="{{ url_for('retirement') }}" class="landing-card">
+      <img src="static/cardImg/retire_couple.jpg" alt="Retirement">
+      <div class="card-overlay">
+        <h2>Retirement Planner</h2>
+        <p>Plan your retirement with our intuitive retirement planning tool.</p>
+      </div>
+    </a>
+  </div>
+
+  <!-- Common footer injected -->
+  <footer id="footer"></footer>
+
+  <!-- JavaScript injection -->
+  <script src="{{ url_for('static', filename='loadHeaderFooter.js') }}"></script>
+
+</body>
+</html>

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>définitif-planner</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <link rel="icon" href="{{ url_for('static', filename='websiteLogos/definitif_Logo_wb_with_red_hl_square.png') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header id="header"></header>
+
+  <!-- Banner-home Section -->
+  <section class="banner-invest">
+    <div class="banner-investcalc">
+      <p class="banner-subtext">
+        Create a portfolio of your choice by selecting the desired asset allocation, 
+        expected returns, and investment mode. The tool estimates the potential value 
+        of your portfolio at the end of the chosen investment period. 
+      </p>
+    
+      <h2>
+        <span>Plannér</span>
+        <span class="red-separator">|</span>
+        <span>Portfolio</span>
+      </h2>
+    </div>
+  </section>
+
+
+  <main class="container">
+    <h2>Portfolio Details</h2>
+     <p class="subheading"></p>
+
+    <form method="POST" action="/investment" class="calc-form" id="investmentForm">
+
+      <div class="form-grid">
+
+      <!-- Returns -->
+      <div class="form-group">
+        <label for="equity_return">Expected Equity Return (%)</label>
+        <input type="number" id="equity_return" name="equity_return" value="{{ form_data.get('equity_return', 12) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="debt_return">Expected Debt Return (%)</label>
+        <input type="number" id="debt_return" name="debt_return" value="{{ form_data.get('debt_return', 6) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="other_return">Expected Other Return (%)</label>
+        <input type="number" id="other_return" name="other_return" value="{{ form_data.get('other_return', 8) }}" required>
+      </div>
+
+      <!-- Allocation -->
+      <div class="form-group">
+        <label for="equity_allocation">Equity Allocation (%)</label>
+        <input type="number" id="equity_allocation" name="equity_allocation" value="{{ form_data.get('equity_allocation', 60) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="debt_allocation">Debt Allocation (%)</label>
+        <input type="number" id="debt_allocation" name="debt_allocation" value="{{ form_data.get('debt_allocation', 30) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="other_allocation">Other Allocation (%)</label>
+        <input type="number" id="other_allocation" name="other_allocation" value="{{ form_data.get('other_allocation', 10) }}" required>
+      </div>
+
+      <!-- Investment -->
+      <div class="form-group">
+        <label for="onetime_amount">Lumpsum Amount</label>
+        <input type="number" id="onetime_amount" name="onetime_amount" value="{{ form_data.get('onetime_amount', 100000) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="sip_amount">Monthly SIP Amount</label>
+        <input type="number" id="sip_amount" name="sip_amount" value="{{ form_data.get('sip_amount', 5000) }}" required>
+      </div>
+
+      <div class="form-group">
+        <label for="tenure_months">Tenure (months)</label>
+        <input type="number" id="tenure_months" name="tenure_months" value="{{ form_data.get('tenure_months', 120) }}" required>
+      </div>
+
+      <!-- SIP Increment -->
+      <div class="form-group sip-group">
+        <label>Annual SIP Increment Type</label>
+        <div class="input-with-value">
+          <select name="annual_SIP_increment_in" id="sipIncrementType" class="approach-input">
+            <option value="Nil" {% if form_data.annual_SIP_increment_in == "Nil" %}selected{% endif %}>Nil</option>
+            <option value="Percentage" {% if form_data.annual_SIP_increment_in == "Percentage" %}selected{% endif %}>Percentage</option>
+            <option value="Fixed Amount" {% if form_data.annual_SIP_increment_in == "Fixed Amount" %}selected{% endif %}>Fixed Amount</option>
+          </select>
+          <input type="number" id="sip_increment" name="sip_increment" class="approach-input"
+                value="{{ form_data.sip_increment or '' }}" placeholder="Enter value" style="display:none;">
+        </div>
+       </div>
+      </div>
+      <button type="submit" class="btn">Calculate Now</button>
+
+    </form>
+
+    <div class="calculator-navigation">
+
+        <p class="calc-nav-title">Explore Other Planning Tools</p>
+        <div class="calculator-actions">
+          <a href="/goal" class="calculator-card">
+          <i class="fas fa-coins"></i>
+          <span>Goal Planning</span>
+          </a>
+
+          <a href="/retirement" class="calculator-card">
+          <i class="fas fa-user-clock"></i>
+          <span>Retirement Planning</span>
+          </a>
+        </div>
+      </div>
+
+  <div id="results">
+    {% if results %}
+      <h3>Expected Growth of Investments</h3>
+        <div class="message-container">
+          <label for="summary_message" class="summary-title">Summary</label>
+          <div class="summary-text">
+            {{ investmentgrowth_message | safe }}
+          </div>
+        </div>
+        <div class="chart-wrapper">
+          <div class="download-container">
+              <a href="/download/investment-excel" class="download-icon" title="Download Excel">
+                  <i class="fas fa-file-excel"></i>
+              </a>
+          </div>
+        </div>
+        
+        <div class="chart-container" id="chart">
+        <div class="calculator-navigation">
+          <p class="calc-nav-title">Need help planning your investments?</p>
+            <div class="calculator-actions">
+              <a href="#get-in-touch" class="calculator-card">
+                <i class="fas fa-envelope"></i>
+                <span>Get in Touch</span>
+              </a>
+            </div>
+        </div>
+          <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+          <script>
+            document.addEventListener("DOMContentLoaded", function () {
+
+              const darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+              const darkLayout = {
+                  paper_bgcolor:'#121212',
+                  plot_bgcolor:'#121212',
+                  font:{color:'#e0e0e0'},
+                  hoverlabel:{
+                      bgcolor:'#ffffff',
+                      font:{color:'#000'}
+                  }
+              };
+
+              const lightLayout = {
+                  paper_bgcolor:'#ffffff',
+                  plot_bgcolor:'#ffffff',
+                  font:{color:'#000'},
+                  hoverlabel:{
+                      bgcolor:'#ffffff',
+                      font:{color:'#000'}
+                  }
+              };
+
+              const layout = darkMode ? darkLayout : lightLayout;
+
+              ['chart'].forEach(id => {
+                  Plotly.relayout(id, layout);
+              });
+
+            });
+
+            /* Detect system theme change */
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+                location.reload();
+            });
+          </script>
+          <script>
+            function renderMainChart() {
+
+                var isMobile = window.innerWidth <= 768;
+                var chartHeight = isMobile ? 260 : 420;
+
+                var graph = JSON.parse('{{ graph_json | safe }}');
+
+                graph.layout.height = chartHeight;
+                graph.layout.autosize = true;
+
+                if (isMobile) {
+
+                    graph.layout.legend = {
+                        orientation: "h",
+                        x: 0,
+                        y: -0.30,
+                        font: { size: 6 },
+                        bgcolor: "rgba(0,0,0,0)"
+                    };
+
+                    graph.layout.xaxis = Object.assign({}, graph.layout.xaxis, {
+                        title: { text: "" },
+                        tickfont: { size: 7 }
+                    });
+
+                    graph.layout.yaxis = Object.assign({}, graph.layout.yaxis, {
+                        title: { text: "" },
+                        tickfont: { size: 7 }
+                    });
+
+                    graph.layout.hoverlabel = {
+                        font: { size: 8 }
+                    };
+
+                    graph.layout.margin = { l: 5, r: 5, t: 10, b: 10 };
+                }
+
+                Plotly.newPlot(
+                    'chart',
+                    graph.data,
+                    graph.layout,
+                    { responsive: true, displaylogo: false }
+                );
+            }
+
+            renderMainChart();
+            window.addEventListener("resize", renderMainChart);
+          </script>
+        </div>
+      {% endif %}
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer"></footer>
+
+  <div id="loading-overlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <p>Preparing your personalized plan…</p>
+    </div>
+  </div>
+
+  <!-- JavaScript injection -->
+  <script src="{{ url_for('static', filename='loadHeaderFooter.js') }}"></script>
+  <!-- Allocation Validation -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      
+      const form = document.getElementById("investmentForm");
+
+      form.addEventListener("submit", function(e) {
+        const eq = parseFloat(document.getElementById('equity_allocation').value) || 0;
+        const debt = parseFloat(document.getElementById('debt_allocation').value) || 0;
+        const other = parseFloat(document.getElementById('other_allocation').value) || 0;
+
+        if (eq + debt + other !== 100) {
+          alert("Total allocation must equal 100%");
+          e.preventDefault();
+        }
+      });
+      /* -------------------------
+         SIP Increment Toggle
+      ------------------------- */
+      const sipType = document.getElementById("sipIncrementType");
+      const sipValue = document.getElementById("sip_increment");
+
+      function updateSipField() {
+        if (sipType.value === "Nil") {
+          sipValue.style.display = "none";
+        } else {
+          sipValue.style.display = "inline-block";
+        }
+      }
+
+      sipType.addEventListener("change", updateSipField);
+      updateSipField(); // run once on page load
+
+    });
+  </script>
+  <script>
+    document.querySelectorAll("form").forEach(form => {
+      form.addEventListener("submit", function() {
+          document.getElementById("loading-overlay").style.display = "flex";
+      });
+    });
+  </script>
+  <script>
+    window.onload = function() {
+        const results = document.getElementById("results");
+        if(results && results.innerHTML.trim() !== "") {
+            results.scrollIntoView({ behavior: "smooth" });
+        }
+    };
+  </script>
+  {% if scroll_to_results %}
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const results = document.getElementById("results");
+        if (results) {
+            results.scrollIntoView({ behavior: "smooth" });
+        }
+    });
+  </script>
+  {% endif %}
+</body>
+</html>

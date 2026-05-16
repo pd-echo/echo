@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>définitif-insights</title>
+  <link rel="icon" href="{{ url_for('static', filename='websiteLogos/definitif_Logo_wb_with_red_hl_square.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Font Awesome for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+</head>
+
+<body>
+  <!-- Header -->
+  <header id="header"></header>
+
+  <!-- Banner -->
+  <div class="banner-insights">
+    <p class="banner-subtext">
+      Stay informed with our capital market insights, 
+      guiding investors through changing economic conditions.
+    </p>
+    <h2>
+      <span>Outlook</span>
+      <span class="red-separator">|</span>
+      <span>Trénd</span>
+      <span class="red-separator">|</span>
+      <span>Insights</span>
+    </h2>
+  </div>
+
+  <section class="ssp-section">
+    <div class="container">
+      <div class="ssp-grid">
+        <!-- Stock Market -->
+        <div class="ssp-card">
+          <div class="card-icon">
+              <i class="fas fa-chart-line"></i>
+          </div>
+          <h3>Indian Stock Market Trends</h3>
+
+          <p>
+            The equity market is consolidating under pressure from global 
+            tensions. Indices remain range-bound, reflecting cautious 
+            sentiment amid rising crude prices and rupee weakness.
+          </p>
+
+          <ul>
+            <li><strong>Market Sentiment:</strong> Fragile, volatility driven by geopolitics.</li>
+            <li><strong>Sector Trends:</strong> IT and financials weak; energy, metals, and select mid-caps show resilience.</li>
+            <li><strong>Institutional Flows:</strong> FIIs continue heavy selling; DIIs provide partial support.</li>
+            <li><strong>Global Influence:</strong> US–Iran conflict, crude above $105, and currency lows dominate.</li>
+            <li><strong>Outlook:</strong> Data-dependent with risks from inflation, RBI policy, and geopolitical escalation.</li>
+          </ul>
+
+          <p>
+            Overall, markets are consolidating with stock-specific opportunities, 
+            especially in commodity-linked and mid-cap segments.
+          </p>
+        </div>
+
+        <!-- Bond Market -->
+        <div class="ssp-card">
+          <div class="card-icon">
+              <i class="fas fa-landmark"></i>
+          </div>
+          <h3>Indian Bond Market Trends</h3>
+
+          <p>
+            The bond market has turned cautious as the 10‑year government bond yield crossed 7%, 
+            driven by inflation concerns and global tensions.
+          </p>
+
+          <ul>
+            <li><strong>Yield Movement:</strong> 10‑year yield above 7%, signaling rising borrowing costs.</li>
+            <li><strong>Auction Demand:</strong> Participation remains steady, though higher yields reflect investor caution.</li>
+            <li><strong>Liquidity Conditions:</strong> Institutional buying continues but is offset by inflationary pressures.</li>
+            <li><strong>Policy Watch:</strong> Crude‑driven inflation and rupee weakness keep RBI policy under close scrutiny.</li>
+            <li><strong>Investment View:</strong> Fixed income still relevant for conservative investors, but duration risk has increased.</li>
+          </ul>
+
+          <p>
+            Overall, yields have firmed in response to geopolitical shocks 
+            and imported inflation, making bonds a defensive but more 
+            yield‑sensitive component of diversified portfolios.
+          </p>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+  <!-- Footer -->
+  <footer id="footer"></footer>
+
+  <!-- JavaScript injection -->
+  <script src="{{ url_for('static', filename='loadHeaderFooter.js') }}"></script>
+</body>
+</html>
