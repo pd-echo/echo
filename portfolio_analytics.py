@@ -141,7 +141,7 @@ def fetch_data_supabase_py(supabase_url: str, supabase_key: str, page_size: int 
 def load_data_from_supabase():
     db_url = os.environ.get("SUPABASE_DB_URL")
     supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_key = os.environ.get("SUPABASE_KEY")
+    supabase_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
 
     if db_url:
         return fetch_data_sqlalchemy(db_url)
@@ -150,7 +150,7 @@ def load_data_from_supabase():
         return fetch_data_supabase_py(supabase_url, supabase_key)
 
     raise ValueError(
-        "Missing Supabase credentials. Set SUPABASE_DB_URL or SUPABASE_URL and SUPABASE_KEY."
+        "Missing Supabase credentials. Set SUPABASE_DB_URL or SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
     )
 
 def get_financial_year(d):
@@ -1177,6 +1177,7 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
     import os
     import json
     import numpy as np
+    from datetime import datetime
 
     os.makedirs(user_output_dir, exist_ok=True)
 
@@ -1198,6 +1199,7 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
     def compress_keys(obj):
         if isinstance(obj, list):
             return [compress_keys(x) for x in obj]
+
         if not isinstance(obj, dict):
             return obj
 
@@ -1220,20 +1222,39 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
         }
 
         out = {}
+
         for k, v in obj.items():
             out[mapping.get(k, k)] = compress_keys(v)
+
         return out
 
     val_ts = results.get("val_ts")
+
     meta = {
         "requested_valuation_date": val_ts.strftime("%Y-%m-%d") if val_ts else None,
         "nav_fallback": "last_available_if_missing",
     }
 
-    index = []
+    users_index = []
+
+    admin_clients = []
+
+    dashboard_summary = {
+        "valuation_date": meta["requested_valuation_date"],
+        "total_clients": 0,
+        "family_logins": 0,
+        "individual_clients": 0,
+        "total_aum": 0,
+        "total_invested": 0,
+        "total_unrealised": 0,
+        "total_realised": 0,
+        "updated_at": datetime.utcnow().isoformat()
+    }
 
     for cfg in user_configs:
+
         login = cfg["login_id"]
+
         print(f"Building JSON for {login}")
 
         data = build_user_json(
@@ -1253,12 +1274,20 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
         })
 
         file_name = f"{login}.json"
+
         file_path = os.path.join(user_output_dir, file_name)
 
         with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(payload, f, separators=(",", ":"), allow_nan=False)
+            json.dump(
+                payload,
+                f,
+                separators=(",", ":"),
+                allow_nan=False
+            )
 
-        index.append(clean_nan({
+        print(f"written -> {file_path}")
+
+        users_index.append(clean_nan({
             "login": login,
             "name": cfg["name"],
             "type": cfg["user_type"],
@@ -1270,11 +1299,92 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
             "file": file_name,
         }))
 
-        print(f"written -> {file_path}")
+        kpi = data.get("kpi", {})
+
+        dashboard_summary["total_clients"] += 1
+
+        if len(cfg["pans"]) > 1:
+
+            dashboard_summary["family_logins"] += 1
+            continue
+
+        dashboard_summary["individual_clients"] += 1
+
+        pv = kpi.get("portfolio_value", 0) or 0
+        inv = kpi.get("invested", 0) or 0
+        ugl = kpi.get("unrealised_gl", 0) or 0
+        rgl = kpi.get("realised_gl", 0) or 0
+
+        dashboard_summary["total_aum"] += pv
+        dashboard_summary["total_invested"] += inv
+        dashboard_summary["total_unrealised"] += ugl
+        dashboard_summary["total_realised"] += rgl
+
+        admin_clients.append(clean_nan({
+
+            "login_id": login,
+
+            "name": cfg["name"],
+
+            "family_name": cfg.get("family_name"),
+
+            "user_type": cfg["user_type"],
+
+            "pan": cfg["pans"][0] if cfg["pans"] else None,
+
+            "mfu_can": cfg.get("mfu_can"),
+
+            "mobile": cfg.get("mobile"),
+
+            "email_connect": cfg.get("email_connect"),
+
+            "dob": cfg.get("dob"),
+
+            "portfolio_value": pv,
+
+            "invested_value": inv,
+
+            "unrealised_gl": ugl,
+
+            "realised_gl": rgl,
+
+            "abs_return": kpi.get("abs_return_pct"),
+
+            "annualised_return": kpi.get("xirr_entire"),
+
+            "valuation_date": meta["requested_valuation_date"],
+
+            "updated_at": datetime.utcnow().isoformat()
+
+        }))
 
     index_path = os.path.join(user_output_dir, "users_index.json")
+
     with open(index_path, "w", encoding="utf-8") as f:
-        json.dump({"users": index}, f, separators=(",", ":"))
+        json.dump(
+            {"users": users_index},
+            f,
+            separators=(",", ":")
+        )
 
     print(f"index written -> {index_path}")
-    return user_output_dir
+
+    print()
+
+    print("=" * 60)
+    print("ADMIN SUMMARY")
+    print("=" * 60)
+
+    print(f"Total Logins      : {dashboard_summary['total_clients']}")
+    print(f"Family Logins     : {dashboard_summary['family_logins']}")
+    print(f"Individual Clients: {dashboard_summary['individual_clients']}")
+    print(f"Total AUM         : {dashboard_summary['total_aum']:,.2f}")
+    print(f"Total Invested    : {dashboard_summary['total_invested']:,.2f}")
+    print(f"Total Unrealised  : {dashboard_summary['total_unrealised']:,.2f}")
+    print(f"Total Realised    : {dashboard_summary['total_realised']:,.2f}")
+
+    return {
+        "output_dir": user_output_dir,
+        "admin_clients": admin_clients,
+        "dashboard_summary": dashboard_summary,
+    }

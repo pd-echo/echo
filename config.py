@@ -7,7 +7,9 @@ def require_env(name: str) -> str:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
 
-BASE_URL = "https://www.definitif.app"
+# BASE_URL = "https://www.definitif.app"
+# BASE_URL = "https://urban-guide-gxqxrxg5w4xvcp4w7-5000.app.github.dev"
+BASE_URL = "http://127.0.0.1:5000"
 LOGIN_URL = f"{BASE_URL}/dashboard"
 
 ADMIN_LOGIN_ID = require_env("ADMIN_LOGIN_ID")
