@@ -1,0 +1,500 @@
+/* =====================================================
+   INSIGHTS DESIGN TOKENS
+   ===================================================== */
+
+:root {
+  --insight-primary: #076e5d;
+  --insight-accent: #ff4a4a;
+  --insight-bg: #F8F8F3;
+  --insight-surface: #ffffff;
+  --insight-surface-hover: #ffffff;
+  --insight-text: #000000;
+  --insight-text-muted: #4a4a4a;
+  --insight-border: #e3e3da;
+  --insight-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+  --insight-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.10);
+  --insight-radius: 16px;
+  --insight-radius-small: 10px;
+  --insight-update-color: #b3261e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --insight-primary: #2FC1A4;
+    --insight-accent: #ff4a4a;
+    --insight-bg: #121212;
+    --insight-surface: #1a1a1a;
+    --insight-surface-hover: #202020;
+    --insight-text: #e8e8e8;
+    --insight-text-muted: #b8b8b8;
+    --insight-border: #2a2a2a;
+    --insight-shadow: none;
+    --insight-shadow-hover: none;
+    --insight-update-color: #ff4a4a;
+  }
+}
+
+/* =====================================================
+   INSIGHTS PAGE ONLY
+   ===================================================== */
+
+.insights-page,
+.article-page {
+  box-sizing: border-box;
+  background-color: var(--insight-bg);
+  color: var(--insight-text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+.insights-page img,
+.article-page img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.insights-page a,
+.article-page a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.insights-page .container,
+.article-page .container {
+  width: min(1200px, 100% - 40px);
+  margin-inline: auto;
+}
+
+.insights-page .visually-hidden,
+.article-page .visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =====================================================
+   HERO
+   ===================================================== */
+
+/*.insights-hero {
+  padding: 88px 0 72px;
+  text-align: center;
+}*/
+
+.insights-hero-actions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.btn-primary {
+  background-color: var(--insight-primary);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  border: 1.5px solid var(--insight-primary);
+  color: var(--insight-text);
+}
+
+.btn-secondary:hover {
+  background-color: rgba(7, 110, 93, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-primary {
+    color: #06231e;
+  }
+
+  .btn-secondary:hover {
+    background-color: rgba(47, 193, 164, 0.10);
+  }
+}
+
+/* =====================================================
+   SECTION HEADERS
+   ===================================================== */
+
+.insights-section {
+  padding: 34px 0 72px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 30px;
+}
+
+.section-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--insight-primary);
+}
+
+.section-title {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+
+.section-text {
+  margin: 0;
+  max-width: 620px;
+  color: var(--insight-text-muted);
+  font-size: 15px;
+}
+
+.section-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--insight-primary);
+}
+
+.section-link span {
+  transition: transform 0.18s ease;
+}
+
+.section-link:hover span {
+  transform: translateX(3px);
+}
+
+@media (max-width: 640px) {
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* =====================================================
+   FEATURED CARD
+   ===================================================== */
+
+.featured-section {
+  padding-bottom: 34px;
+}
+
+.featured-card {
+  border-radius: var(--insight-radius);
+  background-color: var(--insight-surface);
+  border: 1px solid var(--insight-border);
+  border-top: 3px solid var(--insight-primary);
+  box-shadow: var(--insight-shadow);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, transform 0.2s ease,
+    background-color 0.2s ease;
+}
+
+.featured-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--insight-shadow-hover);
+}
+
+.featured-card-link {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  align-items: center;
+  min-height: 340px;
+}
+
+.featured-card-thumbnail {
+  height: 100%;
+  overflow: hidden;
+}
+
+.featured-card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.featured-card-content {
+  padding: 36px;
+}
+
+.featured-card-title {
+  margin: 14px 0 14px;
+  font-size: clamp(24px, 3vw, 32px);
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -0.015em;
+}
+
+.featured-card-summary {
+  margin: 0 0 20px;
+  color: var(--insight-text-muted);
+  font-size: 16px;
+}
+
+@media (max-width: 900px) {
+  .featured-card-link {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .featured-card-thumbnail {
+    aspect-ratio: 16 / 9;
+  }
+
+  .featured-card-content {
+    padding: 24px;
+  }
+}
+
+/* =====================================================
+   CARD GRID
+   ===================================================== */
+
+.insight-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.insight-card-grid--market {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.insight-card-grid--perspectives {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 28px;
+}
+
+@media (max-width: 1080px) {
+  .insight-card-grid,
+  .insight-card-grid--market,
+  .insight-card-grid--perspectives {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .insight-card-grid,
+  .insight-card-grid--perspectives {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-card-grid--market {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 8px;
+    margin-inline: -20px;
+    padding-inline: 20px;
+  }
+
+  .insight-card-grid--market li {
+    flex: 0 0 84%;
+    scroll-snap-align: start;
+  }
+}
+
+/* =====================================================
+   INSIGHT CARD
+   ===================================================== */
+
+.insight-card {
+  height: 100%;
+  border-radius: var(--insight-radius);
+  background-color: var(--insight-surface);
+  border: 1px solid var(--insight-border);
+  box-shadow: var(--insight-shadow);
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease,
+    background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.insight-card:hover {
+  transform: translateY(-4px);
+  background-color: var(--insight-surface-hover);
+  box-shadow: var(--insight-shadow-hover);
+}
+
+.insight-card-link {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.insight-card-thumbnail {
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+}
+
+.insight-card-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.insight-card:hover .insight-card-thumbnail img {
+  transform: scale(1.03);
+}
+
+.insight-card-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  padding: 22px;
+}
+
+.insight-card-category {
+  margin: 0 0 12px;
+  align-self: flex-start;
+  padding: 6px 11px;
+  border-radius: 999px;
+  background-color: rgba(7, 110, 93, 0.08);
+  color: var(--insight-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+@media (prefers-color-scheme: dark) {
+  .insight-card-category {
+    background-color: rgba(47, 193, 164, 0.12);
+  }
+}
+
+.insight-card-title {
+  margin: 0 0 10px;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.insight-card-summary {
+  margin: 0 0 18px;
+  color: var(--insight-text-muted);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.insight-card-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin: 0 0 16px;
+  margin-top: auto;
+  color: var(--insight-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.insight-card-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--insight-primary);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.insight-card-cta span {
+  transition: transform 0.18s ease;
+}
+
+.insight-card:hover .insight-card-cta span {
+  transform: translateX(3px);
+}
+
+/* =====================================================
+   MARKET UPDATE VARIATION
+   ===================================================== */
+
+.insight-card--market-update {
+  border-top: 3px solid var(--insight-primary);
+}
+
+.insight-card-category-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.insight-card-category-row .insight-card-category {
+  margin: 0;
+}
+
+.insight-card-update-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  color: var(--insight-update-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.update-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: var(--insight-update-color);
+}
+
+/* =====================================================
+   PERSPECTIVE VARIATION
+   ===================================================== */
+
+.insight-card--perspective .insight-card-title {
+  font-size: 21px;
+}
+
+.insight-card--perspective .insight-card-summary {
+  font-size: 15.5px;
+}
+
+/* =====================================================
+   ACCESSIBILITY
+   ===================================================== */
+
+:focus-visible {
+  outline: 3px solid var(--insight-primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

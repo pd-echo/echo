@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ section_config.label }} | Définitif Insights
+{% endblock %}
+
+{% block content %}
+<main class="insights-page">
+  <section class="insights-section">
+    <div class="container">
+
+      <nav class="breadcrumb" aria-label="Breadcrumb">
+        <a href="{{ url_for('insights.insights') }}">Home</a>
+        <span aria-hidden="true">→</span>
+        <a href="{{ url_for('insights.insights') }}">Insights</a>
+        <span aria-hidden="true">→</span>
+        <span aria-current="page">
+          {{ section_config.label }}
+        </span>
+      </nav>
+
+      <div class="section-header">
+        <div>
+          <p class="section-eyebrow">
+            {{ section_config.eyebrow }}
+          </p>
+
+          <h1 class="section-title">
+            {{ section_config.heading }}
+          </h1>
+
+          <p class="section-text">
+            {{ section_config.intro }}
+          </p>
+        </div>
+      </div>
+
+      {% if articles %}
+        <ul class="insight-card-grid{% if section == 'market-updates' %} insight-card-grid--market{% elif section == 'perspectives' %} insight-card-grid--perspectives{% endif %}">
+          {% for article in articles %}
+            {% include "insights/partials/insight_card.html" %}
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="section-empty">
+          No insights are available in this section yet.
+        </p>
+      {% endif %}
+
+      <a class="back-link" href="{{ url_for('insights.insights') }}">
+        <span aria-hidden="true">←</span>
+        Back to Insights
+      </a>
+
+    </div>
+  </section>
+</main>
+{% endblock %}

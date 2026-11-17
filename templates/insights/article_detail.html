@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ article.title }} | Définitif Insights
+{% endblock %}
+
+{% block content %}
+<main class="article-page">
+  <div class="container">
+
+    <nav class="breadcrumb" aria-label="Breadcrumb">
+      <a href="{{ url_for('insights.insights') }}">Home</a>
+      <span aria-hidden="true">→</span>
+      <a href="{{ url_for('insights.insights') }}">Insights</a>
+      <span aria-hidden="true">→</span>
+      <a href="{{ url_for('insights.section_list', section=section) }}">
+        {{ section_config.label }}
+      </a>
+      <span aria-hidden="true">→</span>
+      <span aria-current="page">
+        {{ article.title }}
+      </span>
+    </nav>
+
+    <article class="insight-article">
+      <header class="article-header">
+        <p class="insight-card-category">
+          {{ article.category }}
+        </p>
+
+        <h1 class="article-title">
+          {{ article.title }}
+        </h1>
+
+        <p class="article-meta">
+          <span>
+            Published
+            <time datetime="{{ article.published_at }}">
+              {{ article.published_at }}
+            </time>
+          </span>
+
+          {% if article.updated_at %}
+            <span aria-hidden="true">·</span>
+            <span>
+              Updated
+              <time datetime="{{ article.updated_at }}">
+                {{ article.updated_at }}
+              </time>
+            </span>
+          {% endif %}
+
+          <span aria-hidden="true">·</span>
+          <span>{{ article.reading_time }}</span>
+        </p>
+      </header>
+
+      <figure class="article-hero">
+        <img
+          src="{{ url_for('static', filename=article.thumbnail) }}"
+          alt="{{ article.title }}"
+          width="1200"
+          height="675"
+        >
+      </figure>
+
+      {% if section == "market-updates" %}
+        <aside class="market-snapshot" aria-labelledby="market-snapshot-heading">
+          <h2 id="market-snapshot-heading">Market Snapshot</h2>
+
+          <p class="market-snapshot-date">
+            <strong>Data as of:</strong>
+            <time datetime="{{ article.data_as_of }}">
+              {{ article.data_as_of }}
+            </time>
+          </p>
+
+          {% include "insights/partials/market_snapshot.html" %}
+        </aside>
+      {% endif %}
+
+      <div class="article-body">
+        {% include article.body_template %}
+      </div>
+
+      {% if section == "market-updates" %}
+        <aside class="article-disclaimer">
+          <p>
+            <strong>Important:</strong>
+            Market conditions, economic indicators and monetary policy
+            expectations are subject to change. This material is for general
+            information only and does not constitute investment advice or a
+            recommendation to buy or sell any security.
+          </p>
+        </aside>
+      {% endif %}
+
+      <footer class="article-footer">
+        <p class="article-disclaimer">
+          This article is for general information and education purposes only.
+          It does not constitute investment advice or a recommendation to buy
+          or sell any security. Investment returns are subject to market
+          risks; past performance is not indicative of future results.
+        </p>
+
+        <a class="back-link" href="{{ url_for('insights.insights') }}">
+          <span aria-hidden="true">←</span>
+          Back to Insights
+        </a>
+      </footer>
+    </article>
+
+    <section class="related-articles" aria-labelledby="related-heading">
+      <h2 id="related-heading" class="section-title">
+        Related Insights
+      </h2>
+
+      {% if related_articles %}
+        <ul class="insight-card-grid">
+          {% for related_article in related_articles %}
+            <li>
+              <article class="insight-card">
+                <a
+                  class="insight-card-link"
+                  href="{{ url_for(
+                    'insights.blog_detail' if section == 'blogs'
+                    else 'insights.market_update_detail' if section == 'market-updates'
+                    else 'insights.perspective_detail',
+                    slug=related_article.slug
+                  ) }}"
+                >
+                  <div class="insight-card-thumbnail">
+                    <img
+                      src="{{ url_for('static', filename=related_article.thumbnail) }}"
+                      alt="{{ related_article.title }}"
+                      loading="lazy"
+                      width="1200"
+                      height="675"
+                    >
+                  </div>
+
+                  <div class="insight-card-content">
+                    <p class="insight-card-category">
+                      {{ related_article.category }}
+                    </p>
+
+                    <h3 class="insight-card-title">
+                      {{ related_article.title }}
+                    </h3>
+
+                    <p class="insight-card-summary">
+                      {{ related_article.summary }}
+                    </p>
+
+                    <span class="insight-card-cta">
+                      {% if section == "market-updates" %}
+                        Read Full Update
+                      {% elif section == "perspectives" %}
+                        Read Perspective
+                      {% else %}
+                        Read More
+                      {% endif %}
+
+                      <span aria-hidden="true">→</span>
+                    </span>
+                  </div>
+                </a>
+              </article>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="related-empty">
+          No related insights are available yet.
+        </p>
+      {% endif %}
+    </section>
+
+  </div>
+</main>
+{% endblock %}

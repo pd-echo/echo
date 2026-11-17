@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import os
-import json
 import warnings
-from datetime import date, timedelta
+from datetime import date, timedelta, timezone
+from zoneinfo import ZoneInfo
 from collections import deque
 
 import numpy as np
@@ -79,15 +79,6 @@ def fetch_data_supabase_py(supabase_url: str, supabase_key: str, page_size: int 
         raise RuntimeError(f"Failed fetching {table_name}")
 
     rta_df = fetch_all("rta_transactions")
-    # get only required ISINs first
-    # isin_list = rta_df["isin"].dropna().unique().tolist()
-
-    # amfi_nav_df = (
-    #     client.table("amfi_nav")
-    #     .select("*")
-    #     .in_("isin", isin_list)
-    #     .execute()
-    # amfi_nav_df = pd.DataFrame(amfi_nav_df.data)
 
     amfi_nav_df = fetch_all("amfi_nav")
     isin_mapper_df = fetch_all("isin_mapper")
@@ -309,6 +300,21 @@ def build_portfolio_analytics(rta_df, amfi_nav_df, isin_mapper_df, valuation_dat
 
     if 'trxnstat' in rta_df.columns:
         rta_df = rta_df[rta_df['trxnstat'].isin(['Processed', 'Y', 'y'])].copy()
+
+    if 'transaction_type' in rta_df.columns:
+        rta_df = rta_df[~rta_df['transaction_type'].isin([
+            'Pledging',
+            'Unpledging',
+            'Purchase Rejection',
+            'New Purchase Pre-Rejection',
+            'Additional Purchase Pre-Rejection',
+            'Refund',
+            'Redemption Rejection',
+            'Systematic Investment Pre-Rejection',
+        ])].copy()
+
+    if 'txn_code' in rta_df.columns:
+            rta_df = rta_df[~rta_df['txn_code'].isin(['L','D'])].copy()
 
     isin_meta = isin_mapper_df[
         ['isin', 'global_broad_category_group', 'morningstar_category',
@@ -883,36 +889,6 @@ def build_user_json(results, pans, label, user_type='individual'):
 
     cat_alloc = cat_alloc.round(2)
 
-    # ── Performance tables (scoped) ───────────────────────────────────────
-    # cat_rows = []
-
-    # for strategy, h_cat in h.groupby("global_broad_category_group"):
-
-    #     invested = h_cat["cost_value"].sum()
-    #     current_value = h_cat["current_value"].sum()
-    #     gain = h_cat["unrealised_gl"].sum()
-
-    #     rta_cat = rta_user[
-    #         rta_user["isin"].isin(h_cat["isin"].unique())
-    #     ]
-
-    #     # XIRR - since inception
-    #     xi_all = compute_xirr_entire(rta_cat, current_value, val_ts)
-    #     # XIRR - current holdings
-    #     xi_exist = compute_xirr_existing(h_cat, val_ts)
-
-    #     cat_rows.append({
-    #         "global_broad_category_group": strategy,
-    #         "invested": round(invested,2),
-    #         "current_value": round(current_value,2),
-    #         "unrealised_gl": round(gain,2),
-    #         "abs_return_pct": round(gain/invested*100,2) if invested else None,
-    #         "xirr_existing": round(xi_exist*100,2) if xi_exist else None,
-    #         "xirr_entire": round(xi_all*100,2) if xi_all else None
-    #     })
-
-    # cat_summ = pd.DataFrame(cat_rows)
-
     inv_map = (
         rta_user[['pan', 'inv_name']].drop_duplicates('pan')
         if 'inv_name' in rta_user.columns
@@ -1177,9 +1153,24 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
     import os
     import json
     import numpy as np
+    import traceback
     from datetime import datetime
+    from zoneinfo import ZoneInfo
 
     os.makedirs(user_output_dir, exist_ok=True)
+    error_log_path = os.path.join(user_output_dir, "generate_portfolio_errors.log")
+
+    def log_error(login, file_name, exc):
+        msg = (
+            f"\n{'='*80}\n"
+            f"FAILED USER: {login}\n"
+            f"FILE: {file_name}\n"
+            f"ERROR: {exc}\n"
+            f"{traceback.format_exc()}\n"
+        )
+        print(msg)
+        with open(error_log_path, "a", encoding="utf-8") as f:
+            f.write(msg)
 
     def clean_nan(obj):
         if isinstance(obj, dict):
@@ -1199,7 +1190,6 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
     def compress_keys(obj):
         if isinstance(obj, list):
             return [compress_keys(x) for x in obj]
-
         if not isinstance(obj, dict):
             return obj
 
@@ -1221,12 +1211,21 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
             "global_broad_category_group": "g",
         }
 
-        out = {}
+        return {mapping.get(k, k): compress_keys(v) for k, v in obj.items()}
 
-        for k, v in obj.items():
-            out[mapping.get(k, k)] = compress_keys(v)
+    def get_client_type(cfg):
+        user_type = str(cfg.get("user_type", "")).strip().lower()
+        login = str(cfg.get("login_id", "")).strip().lower()
+        name = str(cfg.get("name", "")).strip().lower()
+        family_name = str(cfg.get("family_name", "")).strip().lower()
 
-        return out
+        if "dummy" in user_type or "dummy" in login or "dummy" in name or "dummy" in family_name:
+            return "dummy"
+        if "family" in user_type:
+            return "family"
+        if "firm" in user_type:
+            return "firm"
+        return "individual"
 
     val_ts = results.get("val_ts")
 
@@ -1236,155 +1235,146 @@ def generate_portfolio_json(results, user_configs, user_output_dir="output/users
     }
 
     users_index = []
-
     admin_clients = []
+    failed_users = []
 
     dashboard_summary = {
         "valuation_date": meta["requested_valuation_date"],
         "total_clients": 0,
-        "family_logins": 0,
         "individual_clients": 0,
+        "corporate_clients": 0,
+        "entity_logins": 0,
+        "family_logins": 0,
+        "dummy_logins": 0,
         "total_aum": 0,
         "total_invested": 0,
         "total_unrealised": 0,
         "total_realised": 0,
-        "updated_at": datetime.utcnow().isoformat()
+        "updated_at": datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None).isoformat(sep=" ")
     }
 
     for cfg in user_configs:
-
-        login = cfg["login_id"]
-
-        print(f"Building JSON for {login}")
-
-        data = build_user_json(
-            results=results,
-            pans=cfg["pans"],
-            label=cfg["name"],
-            user_type=cfg["user_type"],
-        )
-
-        payload = clean_nan({
-            "password": cfg["password"],
-            "user_type": cfg["user_type"],
-            "name": cfg["name"],
-            "pans": cfg["pans"],
-            "data": compress_keys(data),
-            "_meta": meta,
-        })
-
+        login = cfg.get("login_id", "UNKNOWN_LOGIN")
         file_name = f"{login}.json"
-
         file_path = os.path.join(user_output_dir, file_name)
 
-        with open(file_path, "w", encoding="utf-8") as f:
-            json.dump(
-                payload,
-                f,
-                separators=(",", ":"),
-                allow_nan=False
+        try:
+            print(f"Building JSON for {login}")
+
+            client_type = get_client_type(cfg)
+
+            data = build_user_json(
+                results=results,
+                pans=cfg["pans"],
+                label=cfg["name"],
+                user_type=cfg["user_type"],
             )
 
-        print(f"written -> {file_path}")
+            payload = clean_nan({
+                "password": cfg["password"],
+                "user_type": cfg["user_type"],
+                "name": cfg["name"],
+                "client_type": client_type,
+                "pans": cfg["pans"],
+                "data": compress_keys(data),
+                "_meta": meta,
+            })
 
-        users_index.append(clean_nan({
-            "login": login,
-            "name": cfg["name"],
-            "type": cfg["user_type"],
-            "pans": cfg["pans"],
-            "mfu_can": cfg.get("mfu_can"),
-            "mobile": cfg.get("mobile"),
-            "email_connect": cfg.get("email_connect"),
-            "dob": cfg.get("dob"),
-            "file": file_name,
-        }))
+            with open(file_path, "w", encoding="utf-8") as f:
+                json.dump(payload, f, separators=(",", ":"), allow_nan=False)
 
-        kpi = data.get("kpi", {})
+            print(f"written -> {file_path}")
 
-        dashboard_summary["total_clients"] += 1
+            users_index.append(clean_nan({
+                "login": login,
+                "name": cfg["name"],
+                "client_type": client_type,
+                "pans": cfg["pans"],
+                "mfu_can": cfg.get("mfu_can"),
+                "mobile": cfg.get("mobile"),
+                "email_connect": cfg.get("email_connect"),
+                "dob": cfg.get("dob"),
+                "file": file_name,
+            }))
 
-        if len(cfg["pans"]) > 1:
+            kpi = data.get("kpi", {})
+            pv = int(kpi.get("portfolio_value", 0) or 0)
+            inv = int(kpi.get("invested", 0) or 0)
+            ugl = int(kpi.get("unrealised_gl", 0) or 0)
+            rgl = int(kpi.get("realised_gl", 0) or 0)
 
-            dashboard_summary["family_logins"] += 1
+            admin_clients.append(clean_nan({
+                "login_id": login,
+                "name": cfg["name"],
+                "family_name": cfg.get("family_name"),
+                "user_type": cfg["user_type"],
+                "pan": cfg["pans"][0] if cfg["pans"] else None,
+                "mfu_can": cfg.get("mfu_can"),
+                "mobile": cfg.get("mobile"),
+                "email_connect": cfg.get("email_connect"),
+                "dob": cfg.get("dob"),
+                "portfolio_value": pv,
+                "invested_value": inv,
+                "unrealised_gl": ugl,
+                "realised_gl": rgl,
+                "abs_return": kpi.get("abs_return_pct"),
+                "annualised_return": kpi.get("xirr_entire"),
+                "valuation_date": meta["requested_valuation_date"],
+                "updated_at": datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None).isoformat(sep=" ")
+            }))
+
+            if client_type == "individual":
+                dashboard_summary["individual_clients"] += 1
+                dashboard_summary["total_clients"] += 1
+                dashboard_summary["entity_logins"] += 1
+            elif client_type == "firm":
+                dashboard_summary["corporate_clients"] += 1
+                dashboard_summary["total_clients"] += 1
+                dashboard_summary["entity_logins"] += 1
+            elif client_type == "family":
+                dashboard_summary["family_logins"] += 1
+            elif client_type == "dummy":
+                dashboard_summary["dummy_logins"] += 1
+
+            if client_type not in {"family", "dummy"}:
+                dashboard_summary["total_aum"] += pv
+                dashboard_summary["total_invested"] += inv
+                dashboard_summary["total_unrealised"] += ugl
+                dashboard_summary["total_realised"] += rgl
+
+        except Exception as exc:
+            failed_users.append({"login": login, "file": file_name, "error": str(exc)})
+            log_error(login, file_name, exc)
             continue
 
-        dashboard_summary["individual_clients"] += 1
-
-        pv = kpi.get("portfolio_value", 0) or 0
-        inv = kpi.get("invested", 0) or 0
-        ugl = kpi.get("unrealised_gl", 0) or 0
-        rgl = kpi.get("realised_gl", 0) or 0
-
-        dashboard_summary["total_aum"] += pv
-        dashboard_summary["total_invested"] += inv
-        dashboard_summary["total_unrealised"] += ugl
-        dashboard_summary["total_realised"] += rgl
-
-        admin_clients.append(clean_nan({
-
-            "login_id": login,
-
-            "name": cfg["name"],
-
-            "family_name": cfg.get("family_name"),
-
-            "user_type": cfg["user_type"],
-
-            "pan": cfg["pans"][0] if cfg["pans"] else None,
-
-            "mfu_can": cfg.get("mfu_can"),
-
-            "mobile": cfg.get("mobile"),
-
-            "email_connect": cfg.get("email_connect"),
-
-            "dob": cfg.get("dob"),
-
-            "portfolio_value": pv,
-
-            "invested_value": inv,
-
-            "unrealised_gl": ugl,
-
-            "realised_gl": rgl,
-
-            "abs_return": kpi.get("abs_return_pct"),
-
-            "annualised_return": kpi.get("xirr_entire"),
-
-            "valuation_date": meta["requested_valuation_date"],
-
-            "updated_at": datetime.utcnow().isoformat()
-
-        }))
-
     index_path = os.path.join(user_output_dir, "users_index.json")
-
     with open(index_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {"users": users_index},
-            f,
-            separators=(",", ":")
-        )
+        json.dump({"users": users_index}, f, separators=(",", ":"))
 
     print(f"index written -> {index_path}")
 
     print()
-
     print("=" * 60)
     print("ADMIN SUMMARY")
     print("=" * 60)
-
-    print(f"Total Logins      : {dashboard_summary['total_clients']}")
+    print(f"Total Clients      : {dashboard_summary['total_clients']}")
+    print(f"Individual Clients : {dashboard_summary['individual_clients']}")
+    print(f"Corporate Clients  : {dashboard_summary['corporate_clients']}")
     print(f"Family Logins     : {dashboard_summary['family_logins']}")
-    print(f"Individual Clients: {dashboard_summary['individual_clients']}")
-    print(f"Total AUM         : {dashboard_summary['total_aum']:,.2f}")
-    print(f"Total Invested    : {dashboard_summary['total_invested']:,.2f}")
-    print(f"Total Unrealised  : {dashboard_summary['total_unrealised']:,.2f}")
-    print(f"Total Realised    : {dashboard_summary['total_realised']:,.2f}")
+    print(f"Dummy Logins      : {dashboard_summary['dummy_logins']}")
+    print(f"Total AUM          : {dashboard_summary['total_aum']:,.2f}")
+    print(f"Total Invested     : {dashboard_summary['total_invested']:,.2f}")
+    print(f"Total Unrealised   : {dashboard_summary['total_unrealised']:,.2f}")
+    print(f"Total Realised     : {dashboard_summary['total_realised']:,.2f}")
+
+    if failed_users:
+        print("\nFAILED USERS:")
+        for item in failed_users:
+            print(f" - {item['login']} -> {item['file']} -> {item['error']}")
 
     return {
         "output_dir": user_output_dir,
         "admin_clients": admin_clients,
         "dashboard_summary": dashboard_summary,
+        "failed_users": failed_users,
     }

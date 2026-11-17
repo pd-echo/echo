@@ -50,12 +50,13 @@ body{visibility:hidden}
 <div class="tab-panel active" id="tab-overview">
 <div class="kpis">
 <div class="card"><div class="kpi-title">Portfolio Value</div><div id="kpi_value" class="kpi-value"></div></div>
-<div class="card"><div class="kpi-title">Invested</div><div id="kpi_invested" class="kpi-value"></div></div>
+<div class="card"><div class="kpi-title">Investment Value</div><div id="kpi_invested" class="kpi-value"></div></div>
 <div class="card"><div class="kpi-title">Unrealised Gain</div><div id="kpi_gain" class="kpi-value"></div></div>
 <div class="card"><div class="kpi-title">Realised Gain</div><div id="kpi_relgain" class="kpi-value"></div></div>
 <div class="card"><div class="kpi-title">Absolute Return</div><div id="kpi_return" class="kpi-value"></div></div>
-<div class="card"><div class="kpi-title">XIRR (Holdings)</div><div id="kpi_xirr_current" class="kpi-value"></div></div>
-<div class="card"><div class="kpi-title">XIRR (SI)</div><div id="kpi_xirr_entire" class="kpi-value"></div></div>
+<div class="card"><div class="kpi-title">XIRR (Current Holdings)</div><div id="kpi_xirr_current" class="kpi-value"></div></div>
+<div class="card"><div class="kpi-title">XIRR (Since Inception)</div><div id="kpi_xirr_entire" class="kpi-value"></div></div>
+<div class="card"><div class="kpi-title">As On</div><div id="kpi_value_date" class="kpi-value"></div></div>
 </div>
 
 
@@ -244,6 +245,7 @@ const KEYMAP = {
     ret:"abs_return_pct",
     x1:"xirr_existing",
     x2:"xirr_entire",
+    val_date:"value_date",
     cv:"current_value",
     w:"weight_pct",
     l:"label",
@@ -1816,22 +1818,25 @@ function styleExcelSheet(ws, headers, rightCols) {
       const raw = String(cell.v ?? "").trim();
       const val = parseFloat(raw.replace(/[₹,%]/g, "").replace(/,/g, ""));
 
+      const isPctCol =
+        headers[C] === "Return" ||
+        headers[C] === "XIRR (Holdings)" ||
+        headers[C] === "XIRR (SI)";
+
       if (!isNaN(val) && rightCols.includes(C)) {
         cell.v = val;
         cell.t = "n";
 
-        if (isTxnSheet) {
+        if (isPctCol) {
+          cell.z = "0.00%";
+          cell.v = val / 100;   // only if the source value is like 12.34 for 12.34%
+        } else if (isTxnSheet) {
           if (C === 2 || C === 3 || C === 4) {
             cell.z = "#,##0.00";
           } else if (C === 5 || C === 6 || C === 7) {
             cell.z = "#,##0";
           } else if (C === 8) {
             cell.z = "0.00%";
-            cell.v = val / 100;
-          }
-        } else if (isPerfSheet || isPanSheet) {
-          cell.z = C === rightCols[rightCols.length - 1] ? "0.00%" : "#,##0";
-          if (C === rightCols[rightCols.length - 1]) {
             cell.v = val / 100;
           }
         } else {
@@ -2041,51 +2046,24 @@ window.waitFor = waitFor;
 
 async function openClientDirect(login){
 
-    console.log("Loading client:", login);
-
-
     if (!isAdmin) {
-        console.log("Starting report session...");
         await startReportSession(SESSION_USER);
     }
-
-    console.log("Looking up client...");
 
     const rec = await getUserIndexRecord(login);
 
     if (!rec)
         throw new Error("Client not found");
 
-    console.log("Downloading portfolio:", rec.file);
-
     await loadUserForAdminOnly(rec.login, rec.file);
-
-    console.log("Rendering dashboard...");
 
     renderLoadedUser(login);
 
-    console.log({
-        renderComplete: window.clientRenderComplete,
-        perfRows: document.querySelectorAll("#perfContainer tbody tr").length,
-        profitRows: document.querySelectorAll("#profitContainer tbody tr").length
-    });
-
-    console.log("Waiting for renderComplete...");
-
     await waitFor(() => window.clientRenderComplete);
-
-    console.log("renderComplete received");
-
-    console.log("Waiting for performance rows...");
 
     await waitFor(() =>
         document.querySelectorAll("#perfContainer tbody tr").length > 0
     );
-
-    console.log("Performance rows ready:",
-        document.querySelectorAll("#perfContainer tbody tr").length);
-
-    console.log("Client ready.");
 }
 
 window.openClientDirect = openClientDirect;
@@ -2110,7 +2088,6 @@ async function loadAllClientSummaries(){
     const res = await fetch("/api/admin/clients");
 
     ADMIN_CLIENTS = await res.json();
-    console.log(ADMIN_CLIENTS);
     return ADMIN_CLIENTS;
 }
 
@@ -2466,9 +2443,8 @@ async function renderAdminClients() {
       finalResult.results.forEach(item => {
         lines.push(
           `${item.clientName || item.login}: ` +
-          `performance=${item.performancePdf ? "yes" : "no"}, ` +
-          `profitbook=${item.profitbookPdf ? "yes" : "no"}, ` +
-          `email=${item.emailSent ? "sent" : "not sent"}`
+          `Portfolio Statement - ${item.portfolioStmtPdf ? "Yes" : "No"}, ` +
+          `Email - ${item.emailSent ? "Sent" : "Not Sent"}`
         );
       });
     }
@@ -2671,35 +2647,18 @@ function renderLoadedUser(login){
     document.getElementById("kpi_return").textContent = formatPct(d.kpi?.abs_return_pct || 0);
     document.getElementById("kpi_xirr_current").textContent = formatPct(d.kpi?.xirr_existing || 0);
     document.getElementById("kpi_xirr_entire").textContent = formatPct(d.kpi?.xirr_entire || 0);
+    document.getElementById("kpi_value_date").textContent = d.kpi?.value_date || "-";
 
     window.clientRenderComplete = false;
 
     try {
 
         renderAsset(d.assetAlloc || []);
-        console.log("✓ renderAsset");
-
         renderStrategy(d.strategyAlloc || []);
-        console.log("✓ renderStrategy");
-
         renderPan(d.panSummary || []);
-        console.log("✓ renderPan");
-
         renderPerfGrouped(d.perfIsin || []);
-        console.log("✓ renderPerfGrouped");
-
         renderProfit(d.profitBookFund || []);
-        console.log("✓ renderProfit");
-
-        console.log("Finished rendering", {
-            client: document.getElementById("clientNameHeader")?.textContent,
-            perfRows: document.querySelectorAll("#perfContainer tbody tr").length,
-            profitRows: document.querySelectorAll("#profitContainer tbody tr").length
-        });
-
     } catch (e) {
-
-        console.error("renderLoadedUser FAILED", e);
         throw e;
 
     } finally {
@@ -3688,7 +3647,7 @@ ${r.fund_display}
 <td>${r.folio_no||""}</td>
 <td>${r.dop||""}</td>
 <td>${r.dos||""}</td>
-<td>${r.total_units??""}</td>
+<td>${r.total_units.toFixed(3)??""}</td>
 <td>${formatCurrency(r.total_cost||0)}</td>
 <td>${formatCurrency(r.total_proceeds||0)}</td>
 <td>${formatCurrency(r.total_gain_loss||0)}</td>
@@ -3908,7 +3867,7 @@ tr.innerHTML=`
 class="txn-check"
 data-fund="${group.fund}"
 data-folio="${group.folio}"
-data-units="${r.units ?? 0}"
+data-units="${r.units.toFixed(3) ?? 0}"
 data-invested="${r.investment ?? 0}"
 data-value="${r.current_value ?? 0}"
 data-gain="${gain}"
@@ -3921,7 +3880,7 @@ data-gain="${gain}"
 
 <td>${r.transaction_type || ""}</td>
 
-<td class="units">${r.units ?? 0}</td>
+<td class="units">${r.units.toFixed(3) ?? 0}</td>
 
 <td>${r.purchase_nav ?? 0}</td>
 

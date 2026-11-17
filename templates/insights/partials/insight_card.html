@@ -1,0 +1,85 @@
+<li>
+  <article class="insight-card{% if section == 'market-updates' %} insight-card--market-update{% elif section == 'perspectives' %} insight-card--perspective{% endif %}">
+    <a
+      class="insight-card-link"
+      href="{{ url_for(
+        'insights.blog_detail' if section == 'blogs'
+        else 'insights.market_update_detail' if section == 'market-updates'
+        else 'insights.perspective_detail',
+        slug=article.slug
+      ) }}"
+    >
+      <div class="insight-card-thumbnail">
+        <img
+          src="{{ url_for('static', filename=article.thumbnail) }}"
+          alt="{{ article.title }}"
+          loading="lazy"
+          width="1200"
+          height="675"
+        >
+      </div>
+
+      <div class="insight-card-content">
+        <div class="insight-card-category-row">
+          <p class="insight-card-category">
+            {{ article.category }}
+          </p>
+
+          {% if section == "market-updates" and article.updated_at %}
+            <p class="insight-card-update-badge">
+              <span class="update-dot" aria-hidden="true"></span>
+              Updated
+            </p>
+          {% endif %}
+        </div>
+
+        <h3 class="insight-card-title">
+          {{ article.title }}
+        </h3>
+
+        <p class="insight-card-summary">
+          {{ article.summary }}
+        </p>
+
+        <p class="insight-card-meta">
+          {% if section == "perspectives" and article.author %}
+            <span>{{ article.author }}</span>
+            <span aria-hidden="true">·</span>
+          {% endif %}
+
+          <span>
+            Published
+            <time datetime="{{ article.published_at }}">
+              {{ article.published_at }}
+            </time>
+          </span>
+
+          {% if section == "market-updates" and article.updated_at %}
+            <span aria-hidden="true">·</span>
+            <span>
+              Updated
+              <time datetime="{{ article.updated_at }}">
+                {{ article.updated_at }}
+              </time>
+            </span>
+          {% endif %}
+
+          <span aria-hidden="true">·</span>
+          <span>{{ article.reading_time }}</span>
+        </p>
+
+        <span class="insight-card-cta">
+          {% if section == "market-updates" %}
+            Read Full Update
+          {% elif section == "perspectives" %}
+            Read Perspective
+          {% else %}
+            Read More
+          {% endif %}
+
+          <span aria-hidden="true">→</span>
+        </span>
+      </div>
+    </a>
+  </article>
+</li>
